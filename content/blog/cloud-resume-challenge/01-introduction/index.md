@@ -15,5 +15,3 @@ Firstly, while I wouldn't consider myself to be a talented web designer due to s
 Secondly, I would love to learn more about cloud engineering and DevOps. I have some exposure from my previous and current employment, but more can only help. The Cloud Resume Challenge provides a few variants, covering different cloud service providers or advanced technologies; I currently have more experience with Microsoft Azure but would like to spend more time with AWS so I will follow [The Cloud Resume Challenge - AWS](https://cloudresumechallenge.dev/docs/the-challenge/aws/).
 
 Finally, the obvious benefit to this challenge is the outcome. Having a resume available online which is easy to share and easy to maintain should help with career opportunities. The learning and experience from the project can hopefully be used throughout my career, and it also makes a great talking point and provides examples to be used in future interviews.
-
-So, let's begin.
