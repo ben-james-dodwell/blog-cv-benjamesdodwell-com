@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge: Infrastructure as Code - Backend"
+title: "Cloud Resume Challenge: Backend Infrastructure as Code"
 date: "2024-04-25T13:40:00.000Z" 
 description: "Using Terraform to configure the DynamoDB table, Lambda function, and API Gateway as code."
 ---
