@@ -82,13 +82,13 @@ It also seemed to be necessary to create the Lambda function from an archive of 
 ```hcl
 data "archive_file" "lambda_incrementvisits_payload" {
   type        = "zip"
-  source_file = "${path.module}/lambda/IncrementVisits/IncrementVisits.py"
-  output_path = "${path.module}/lambda/IncrementVisits/IncrementVisits_payload.zip"
+  source_file = "${path.module}/../lambda/IncrementVisits/src/IncrementVisits.py"
+  output_path = "${path.module}/../lambda/IncrementVisits/IncrementVisits_payload.zip"
 }
 
 # Create Lambda function from Python archive
 resource "aws_lambda_function" "IncrementVisits" {
-  filename      = "${path.module}/lambda/IncrementVisits/IncrementVisits_payload.zip"
+  filename      = "${path.module}/../lambda/IncrementVisits/IncrementVisits_payload.zip"
   function_name = "IncrementVisits"
   role          = aws_iam_role.LambdaAssumeRole.arn
   handler       = "IncrementVisits.lambda_handler"
