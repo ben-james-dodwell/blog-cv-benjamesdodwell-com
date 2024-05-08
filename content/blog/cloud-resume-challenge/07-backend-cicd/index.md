@@ -1,7 +1,7 @@
 ---
 title: "Cloud Resume Challenge: CI/CD for Backend Infrastructure"
 date: "2024-05-08T08:30:00.000Z" 
-description: "Using GitHub Actions workflows to test the Python Lambda function, then deploy the infrastructure with Terraform."
+description: "Using GitHub Actions workflows to test the Python Lambda function, then deploy the backend infrastructure with Terraform."
 ---
 
 Using [GitHub Actions](https://docs.github.com/en/actions), I would create YAML files in the `.github\workflows` path of the project to define my pipelines. My structure was basic, with one file to run the Python tests for integration, and another to create the infrastructure with Terraform for deployment.
