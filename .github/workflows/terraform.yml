@@ -1,9 +1,10 @@
-name: 'Deploy'
+name: 'Deploy Terraform'
 
 on:
   workflow_dispatch:
   push:
     branches: [ "master" ]
+    paths: 'terraform/**'
 
 permissions:
   id-token: write
@@ -56,24 +57,3 @@ jobs:
     - name: Create CloudFront Cache Invalidation
       if: ${{ !contains(steps.tfplan.outputs.stdout, 'Your infrastructure matches the configuration.') }}
       run: aws cloudfront create-invalidation --distribution-id ${{ steps.tfoutput.outputs.stdout }} --paths '/*'
-
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: "18"
-
-    - name: NPM Install
-      working-directory: ./gatsby
-      run: npm install
-    
-    - name: Gatsby Build
-      working-directory: ./gatsby
-      run: npm run build
-
-    - name: Deploy to S3
-      working-directory: ./gatsby
-      run: aws s3 sync ./public s3://blog.cv.benjamesdodwell.com
-
-        
-
-

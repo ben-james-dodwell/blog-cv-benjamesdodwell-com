@@ -1,0 +1,68 @@
+name: 'Deploy Gatsby'
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+    paths: 'gatsby/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  gatsby:
+    name: 'Deploy'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::231055119230:role/GitHubActionsTerraformRole
+        aws-region: eu-west-2
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18"
+
+    - name: NPM Install
+      working-directory: ./gatsby
+      run: npm install
+    
+    - name: Gatsby Build
+      working-directory: ./gatsby
+      run: npm run build
+
+    - name: Deploy to S3
+      working-directory: ./gatsby
+      run: aws s3 sync ./public s3://blog.cv.benjamesdodwell.com
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.8.2
+
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init -input=false
+
+    - name: Terraform Output
+      id: tfoutput
+      working-directory: ./terraform
+      run: terraform output -raw cf_id
+
+    - name: Create CloudFront Cache Invalidation
+      run: aws cloudfront create-invalidation --distribution-id ${{ steps.tfoutput.outputs.stdout }} --paths '/*'
+
+        
+
+
