@@ -57,6 +57,20 @@ jobs:
       if: ${{ !contains(steps.tfplan.outputs.stdout, 'Your infrastructure matches the configuration.') }}
       run: aws cloudfront create-invalidation --distribution-id ${{ steps.tfoutput.outputs.stdout }} --paths '/*'
 
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18"
+
+    - name: NPM Install
+      run: npm install
+    
+    - name: Gatsby Build
+      run: npm run build
+
+    - name: Deploy to S3
+      run: aws s3 sync ./public s3://blog.cv.benjamesdodwell.com --acl public-read
+
         
 
 
