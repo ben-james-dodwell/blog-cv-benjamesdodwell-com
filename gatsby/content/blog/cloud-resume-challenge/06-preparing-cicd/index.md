@@ -6,9 +6,9 @@ description: "Writing Python tests, storing Terraform state remotely, and prepar
 
 The infrastructure is now defined as code, using Terraform, but deployment is still manual. I would like to automate this process with a continuous integration and continuous deployment (CI/CD) pipeline.
 
-**Continuous Integration (CI)** is a software development practice where code changes are frequently merged into a repository, triggering automated builds and tests. This can provide benefits such as earlier detection of integration errors, leading to faster feedback loops for developers. **Continuous Deployment (CD)** then follows as the steps which deploy successfully integrated builds into production environments.
+**Continuous Integration (CI)** is a software development practice where code changes are frequently merged into a repository, triggering automated builds and tests. This can provide benefits such as earlier detection of integration errors, leading to faster feedback loops for developers. **Continuous Deployment (CD)** involves deploying successfully integrated builds into production environments.
 
-Considering the importance of testing for successful integration, I felt that I'd need to revisit my Lambda function and at least write some basic unit tests. I'm using Boto3 for interacting with AWS, but knew that I'd need a way to mock this functionality so that my tests don't actually impact anything in production, and [Moto](https://docs.getmoto.org/en/latest/index.html) allows for exactly that.
+Considering the importance of testing for successful integration, I feel that I need to revisit my Lambda function and at least write some basic unit tests. I'm using Boto3 for interacting with AWS, but knew that I'd need a way to mock this functionality so that my tests don't actually impact anything in production, and [Moto](https://docs.getmoto.org/en/latest/index.html) allows for exactly that.
 
 The following test class imports my IncrementVisits module, then uses the `@mock_aws` decorator to wrap each function. Since we aren't actually connecting to our existing AWS infrastructure, we need to create a mocked DynamoDB table to be used by the test. The `test_lambda_handler_success()` function asserts that we receive the  HTTP 200 success code and that the returned body matches what we would expect. The `test_lambda_handler_error()` function asserts that we receive an HTTP 500 error code in a scenario such as where the DynamoDB table does not exist.
 
@@ -71,7 +71,7 @@ class Test_IncrementVisits(unittest.TestCase):
 
 ```
 
-Since my goal is to move away from manually running the tests and deployment, I need to also consider how to handle some of the local state. The [Terraform .tfstate](https://developer.hashicorp.com/terraform/language/state) and [.aws/credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) files are not part of source control because they contain sensitive data but would need to be available in some form for automation to function.
+Since my goal is to move away from manually running the tests and deploying, I need to also consider how to handle some of the local state. The [Terraform .tfstate](https://developer.hashicorp.com/terraform/language/state) and [.aws/credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) files are not part of source control because they contain sensitive data but would need to be available in some form for automation to function.
 
 Terraform can support a backend for remote state storage which helps to avoid inconsistency and conflicts when compared with local state storage. In my case, I would use an [S3 backend](https://developer.hashicorp.com/terraform/language/settings/backends/s3) with the state file stored in a bucket and a DynamoDB table used to provide state locking and consistency checking.
 
@@ -121,7 +121,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_encrypt
 }
 ```
 
-Note that it was necessary to define a [depends_on](https://developer.hashicorp.com/terraform/language/meta-arguments/depends_on) relationship between the object lock and the versioning configuration. The order that resources are declared in a configuration file does not dictate the order that Terraform executes them. It typically does a good job of inferring relationships automatically, but in this case I was receiving an error that object lock can only be used when versioning is enabled. By adding the dependency manually, it ensured that versioning was enabled before object lock.
+It was necessary to define a [depends_on](https://developer.hashicorp.com/terraform/language/meta-arguments/depends_on) relationship between the object lock and the versioning configuration. The order that resources are declared in a configuration file does not dictate the order that Terraform executes them. It typically does a good job of inferring relationships automatically, but in this case I was receiving an error that object lock can only be used when versioning is enabled. By adding the dependency manually, it ensured that versioning was enabled before object lock.
 
 Lastly, we create the DynamoDB table to track the locking and consistency.
 
@@ -176,7 +176,7 @@ data "aws_iam_policy_document" "assume_role_github" {
 
     principals {
       type        = "Federated"
-      identifiers = ["arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"]
+      identifiers = ["arn:aws:iam::############:oidc-provider/token.actions.githubusercontent.com"]
     }
 
     condition {
@@ -218,7 +218,7 @@ resource "aws_iam_role_policy" "terraform_policy" {
         "Action" : [
           "dynamodb:*"
         ],
-        "Resource" : "arn:aws:dynamodb:eu-west-2:123456789012:table/abcdef-terraform-locking"
+        "Resource" : "arn:aws:dynamodb:eu-west-2:############:table/abcdef-terraform-locking"
       }
     ]
   })
