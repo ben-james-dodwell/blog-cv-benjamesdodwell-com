@@ -50,9 +50,9 @@ jobs:
 ```
 
  I discovered that [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) was throwing an error: `botocore.exceptions.NoCredentialsError: Unable to locate credentials`
- This wasn't an error that I encountered when testing locally, because I had already configured a `.aws/credentials` file. However, I didn't expect to need credentials in the GitHub runner environment since I was using [Moto](https://docs.getmoto.org/en/latest/docs/getting_started.html) to mock my AWS interactions during testing. It seemed that Boto3 expects to find credentials, even if they ultimately aren't used, so setting some dummy keys as environment variables was an easy solution.
+ This wasn't an error that I encountered when testing locally, because I had already configured a `.aws/credentials` file. However, I didn't expect to need credentials in the GitHub runner environment since I was using [Moto](https://docs.getmoto.org/en/latest/docs/getting_started.html) to mock my AWS interactions during testing. It appears that Boto3 expects to find credentials, even if they ultimately aren't used, so setting some dummy keys as environment variables was the solution.
 
-The deployment job should trigger only on successful completion of the test workflow. This is managed at two points with GitHub Actions, first being that the deploy workflow triggers when the test workflow completes. However, it is important to note that this will trigger regardless of the results of the test. 
+The deployment job should trigger only on successful completion of the test workflow. This is managed at two points with GitHub Actions. First, the deploy workflow triggers when the test workflow completes. However, it is important to note that this will trigger regardless of the results of the test. 
 
  ```yaml
  name: 'Terraform'
@@ -87,7 +87,7 @@ jobs:
     - name: Configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsTerraformRole
+        role-to-assume: arn:aws:iam::########:role/GitHubActionsTerraformRole
         aws-region: eu-west-2
 ```
 
