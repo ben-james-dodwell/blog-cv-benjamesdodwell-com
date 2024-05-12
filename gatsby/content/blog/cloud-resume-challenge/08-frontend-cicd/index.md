@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge: IaC and CI/CD for Frontend Infrastructure"
+title: "IaC and CI/CD for Frontend Infrastructure"
 date: "2024-05-08T16:00:00.000Z" 
 description: "Using GitHub Actions workflows to deploy the frontend infrastructure with Terraform."
 ---

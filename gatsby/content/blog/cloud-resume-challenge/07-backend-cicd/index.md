@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge: CI/CD for Backend Infrastructure"
+title: "CI/CD for Backend Infrastructure"
 date: "2024-05-08T08:30:00.000Z" 
 description: "Using GitHub Actions workflows to test the Python Lambda function, then deploy the backend infrastructure with Terraform."
 ---

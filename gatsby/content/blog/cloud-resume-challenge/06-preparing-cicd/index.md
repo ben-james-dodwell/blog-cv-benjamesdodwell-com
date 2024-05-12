@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge: Preparing for Continuous Integration and Continuous Deployment"
+title: "Preparing for Continuous Integration and Continuous Deployment"
 date: "2024-05-03T16:30:00.000Z" 
 description: "Writing Python tests, storing Terraform state remotely, and preparing authentication and authorization for GitHub Actions."
 ---

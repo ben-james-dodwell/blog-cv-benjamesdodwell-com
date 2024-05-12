@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge: Database and API"
+title: "Database and API"
 date: "2024-03-08T08:02:00.000Z" 
 description: "Configuring a DynamoDB table, Lambda function, and API Gateway."
 ---

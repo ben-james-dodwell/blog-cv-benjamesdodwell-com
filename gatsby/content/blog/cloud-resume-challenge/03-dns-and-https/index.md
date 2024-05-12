@@ -1,14 +1,14 @@
 ---
-title: "Cloud Resume Challenge: DNS and HTTPS"
+title: "Configuring DNS and HTTPS"
 date: "2024-03-07T08:56:00.000Z" 
-description: "Configuring Route 53 and CloudFront."
+description: "Using Route 53 to manage DNS, and CloudFront with AWS Certificate Manager to serve a static website over HTTPS."
 ---
 
-Before I begin with the technical work, I want to quickly cover terminology. This project is named The Cloud Resume Challenge but the word resume is less commonly used in the United Kingdom, where I live, when compared to Curriculum Vitae or CV. There is a [difference](https://www.grammarly.com/blog/cv-resume/) in that a resume should be a summary of relevant experience and skills tailored towards a specific job, whereas a CV is more academically focused and usually a complete history. Resume is probably the more appropriate description of the document that I intend to publish with this project, but nevertheless they are treated almost interchangeably in my country so I will use CV as the more popular term.
+Before I begin with the technical work, I want to quickly cover terminology. This project is named The Cloud Resume Challenge but the word "resume" is less commonly used in the United Kingdom, where I live, when compared to "Curriculum Vitae" or "CV". There is a [difference](https://www.grammarly.com/blog/cv-resume/) in that a resume should summarise relevant experience and skills tailored towards a specific job, whereas a CV is more academically focused and usually includes a complete personal history. "Resume" is probably the more appropriate description of the document that I intend to publish with this project; nevertheless, they are treated almost interchangeably in my country so I will use "CV" as the more popular term.
 
 The reason that terminology is suddenly important, is that I am at a point where I want to configure a custom domain to access my S3 static website. The website endpoint generated for the AWS bucket will be something like bucket-name-here.s3-website.eu-west-2.amazonaws.com which is hard to remember and doesn't look great from a _personal brand_ point-of-view.
 
-I have registered benjamesdodwell.com and would like to use a subdomain, such as cv.benjamesdodwell.com for this project. Namecheap are the registrar and they provide an email forwarding service that I would like to continue using, but I would also like to use AWS Route 53 to manage DNS for this project. So, my plan is leave Namecheap managing the root domain but create name server (NS) DNS records for the cv subdomain.
+I have registered benjamesdodwell.com and would like to use a subdomain, such as cv.benjamesdodwell.com for this project. Namecheap are the registrar and they provide an email forwarding service that I would like to continue using, but I would also like to use AWS Route 53 to manage DNS for this project. So, my plan is continue using Namecheap for managing the root domain but create name server (NS) DNS records for the cv subdomain so that it can be managed by Route 53.
 
 The first step is to create a public hosted zone in Route 53 for cv.benjamesdodwell.com. This automatically creates start of authority (SOA) and name server (NS) records, and the values of these NS records can then be used for the cv subdomain on Namecheap. Once the records propagate, I'll have the split control that I'm looking for.
 ```
@@ -31,7 +31,7 @@ cv.benjamesdodwell.com  nameserver = ns-234.awsdns-29.com
 cv.benjamesdodwell.com  nameserver = ns-926.awsdns-51.net
 ```
 
-At this stage, I could create an alias (A) record in Route 53 for the cv.benjamesdodwell.com alias to the S3 bucket static website endpoint. However, the static website is still using HTTP and I'd rather use HTTPS as a security best-practice so, to avoid rework, I will deal with this next and revisit the DNS records at the end.
+At this stage, I could create an alias (A) record in Route 53 for cv.benjamesdodwell.com to the S3 bucket static website endpoint. However, the static website is still using HTTP, and I'd rather use HTTPS as a security best practice. To avoid rework, I will deal with this next and revisit the DNS records at the end.
 
 In order to enable HTTPS, I will need a certificate, and it seems that [AWS Certificate Manager (ACM)](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/getting-started-cloudfront-overview.html#getting-started-cloudfront-request-certificate) can issue them for free to be used with integrated services such as CloudFront and Elastic Load Balancing.
 
@@ -42,6 +42,8 @@ CloudFront is a content delivery network (CDN) service that is perhaps primarily
 ![CloudFront with AWS Certificate Manager integration](cloudfront-certificate.png)
 
 Finally, we can revisit DNS and [route traffic to our CloudFront distribution endpoint](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/getting-started-cloudfront-overview.html#getting-started-cloudfront-create-alias) via our custom domain by creating an A record.
+
+The following screenshot shows a valid certificate when accessing cv.benjamesdodwell.com over HTTPS:
 
 ![Browser showing valid certificate for custom domain](valid-certificate.png)
 
