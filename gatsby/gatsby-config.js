@@ -9,14 +9,14 @@
  */
 module.exports = {
   siteMetadata: {
-    title: `Dev Projects Blog`,
+    title: `Tech Projects Portfolio`,
     author: {
       name: `Ben James Dodwell`,
       summary: `who works with IT Infrastructure, and enjoys learning web development (PHP and Laravel framework) and DevOps methodologies.`,
       linkedin: `https://www.linkedin.com/in/ben-dodwell/`,
     },
-    description: `A GitHub Pages Blog using Gatsby, covering personal projects relating to Software Development, DevOps, and Cloud Infrastructure.`,
-    siteUrl: `https://ben-james-dodwell.github.io/`,
+    description: `A Gatsby blog, covering personal projects relating to Cloud Infrastructure, DevOps, and Software Development.`,
+    siteUrl: `https://blog.cv.benjamesdodwell.com/`,
   },
   plugins: [
     `gatsby-plugin-image`,
@@ -100,7 +100,7 @@ module.exports = {
               }
             }`,
             output: "/rss.xml",
-            title: "Gatsby Starter Blog RSS Feed",
+            title: "Tech Projects Portfolio RSS Feed",
           },
         ],
       },
@@ -108,8 +108,8 @@ module.exports = {
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
-        name: `Gatsby Starter Blog`,
-        short_name: `Gatsby`,
+        name: `Tech Projects Portfolio`,
+        short_name: `Tech Projects Portfolio`,
         start_url: `/`,
         background_color: `#ffffff`,
         // This will impact how browsers show your PWA/website
