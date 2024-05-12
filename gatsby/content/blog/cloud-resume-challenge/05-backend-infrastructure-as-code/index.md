@@ -6,22 +6,23 @@ description: "Using Terraform to configure the DynamoDB table, Lambda function, 
 
 So far, everything that I've created in AWS has been through the web console. This is a great way to learn which services are available, and how those services can be configured.
 
-I can improve upon this foundation by utilising Infrastructure as Code (IaC) techniques which provide many benefits, such as:
+I can improve upon this foundation by utilising Infrastructure as Code (IaC) techniques, which offer several benefits, including:
 - **Version Control** to help track changes, and revert to previous versions if required.
 - **Reusability** which allows me to efficiently recreate and adapt the infrastructure for other projects.
 - **Automation** to quickly and consistently deploy changes.
 
-AWS supports IaC with some native tooling such as [CloudFormation](https://aws.amazon.com/cloudformation/) and [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification.html). However, I would like to use the third-party HashiCorp [Terraform](https://developer.hashicorp.com/terraform/install), as I have some familiarity with it and the vSphere provider, and feel that it will offer more flexibility going forwards.
+While AWS supports IaC with native tools like [CloudFormation](https://aws.amazon.com/cloudformation/) and [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification.html), I chose to use the third-party HashiCorp [Terraform](https://developer.hashicorp.com/terraform/install) for its flexibility and my existing familiarity with it.
 
-Reading the documentation for the [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs) shows that there are several ways for Terraform to authenticate to AWS. While I am working locally and manually with Terraform, I will use the [Shared Configuration and Credentials Files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#shared-configuration-and-credentials-files) method as configured by [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). This will likely change when I move towards an automated continuous integration and continuous deployment (CI/CD) pipeline.
+While working locally with Terraform, I opted to authenticate using the [Shared Configuration and Credentials Files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#shared-configuration-and-credentials-files) method as configured by [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). However, I anticipate transitioning to a different authentication method when setting up an automated continuous integration and continuous deployment (CI/CD) pipeline.
 
-I wanted to create an account specifically to be used by Terraform so that I could follow the principle of least privilege. There are tools that can help with this endeavour, namely [IAM Access Analyzer](https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-getting-started.html) and [IAM Access Advisor](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_access-advisor.html?icmpid=docs_iam_console), but I found an approach where I gradually add permissions as required while developing my code was easiest.
+To adhere to the principle of least privilege, I decided to create an account specifically for Terraform usage. While tools like [IAM Access Analyzer](https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-getting-started.html) and [IAM Access Advisor](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_access-advisor.html?icmpid=docs_iam_console) can assist with this process, I found it more practical to gradually add permissions as required while developing my code.
 
 With Terraform and AWS CLI installed and configured, I was ready to start writing code. There are [tutorials](https://developer.hashicorp.com/terraform/tutorials) available on the HashiCorp website, including those tailored towards certain providers such as AWS. I also discovered a useful collection of curated [.gitignore](https://github.com/github/gitignore/blob/main/Terraform.gitignore) files which I opted to use for Terraform. I'm aware that sensitive information may be stored in certain files and shouldn't be committed to public source code repositories, so having a sensible starting point for exclusions is worthwhile.
 
 At a high level, I knew that I'd need a DynamoDB table, a Lambda function, and an API Gateway.
 
-The DynamoDB table was quite straightforward to define in Terraform:
+Defining the DynamoDB table in Terraform was straightforward:
+
 ```hcl
 # Create DynamoDB table Visits
 resource "aws_dynamodb_table" "visits" {
@@ -36,7 +37,8 @@ resource "aws_dynamodb_table" "visits" {
 }
 ```
 
-The Lambda function started to become more slightly more complex, as it would need to assume an IAM role for execution with policies that grant it the required permissions, such as access to the previously created DynamoDB table.
+The Lambda function started to become slightly more complex, as it would need to assume an IAM role for execution with policies that grant it the required permissions, such as access to the previously created DynamoDB table.
+
 ```hcl
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -79,6 +81,7 @@ resource "aws_iam_role" "LambdaAssumeRole" {
 ```
 
 It also seemed to be necessary to create the Lambda function from an archive of the Python file, rather than directly.
+
 ```hcl
 data "archive_file" "lambda_incrementvisits_payload" {
   type        = "zip"
@@ -102,6 +105,7 @@ resource "aws_lambda_function" "IncrementVisits" {
 The API Gateway didn't seem too difficult at first, requiring 3 resources for the gateway itself, then an integration with the Lambda function, and a HTTP route. However, at this stage I encountered a challenge in that the gateway is created with randomised subdomain for the Invoke URL and I needed to be able to target it in my website code. The easiest solution to this problem seemed to be the use of a custom domain, so that I could instead target something that I control, such as api.cv.benjamesdodwell.com.
 
 So, I would first need to request a certificate for this domain from ACM:
+
 ```hcl
 # Request certificate from ACM to be used as Custom Domain with API Gateway
 resource "aws_acm_certificate" "api_request" {
@@ -111,6 +115,7 @@ resource "aws_acm_certificate" "api_request" {
 ```
 
 Then, I would validate the certificate using DNS records:
+
 ```hcl
 data "aws_route53_zone" "cv_benjamesdodwell_com" {
   name         = "cv.benjamesdodwell.com."
@@ -142,7 +147,8 @@ resource "aws_acm_certificate_validation" "api_validated" {
 }
 ```
 
-Once the certificate was validated and issued, I could create it as a custom domain to be used by the API Gateway with an associated DNS alias record:
+Once the certificate was validated and issued, I could create it as a custom domain to be used by the API Gateway with an associated DNS alias (A) record:
+
 ```hcl
 # Create Custom Domain for API Gateway (HTTP)
 resource "aws_apigatewayv2_domain_name" "api_cv_benjamesdodwell_com" {
@@ -169,6 +175,7 @@ resource "aws_route53_record" "api_cv_benjamesdodwell_com_alias" {
 ```
 
 Finally, all the pieces can come together to create the API Gateway with CORS configuration, integration and permission to execute the Lambda function, defining an HTTP route, and mapping to the custom domain.
+
 ```hcl
 # Create API Gateway (HTTP) with CORS
 resource "aws_apigatewayv2_api" "lambda_incrementvisits" {
