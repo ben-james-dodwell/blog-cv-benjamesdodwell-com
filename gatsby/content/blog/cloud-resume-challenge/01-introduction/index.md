@@ -1,5 +1,5 @@
 ---
-title: "Cloud Resume Challenge"
+title: "Starting the Cloud Resume Challenge"
 date: "2024-03-06T08:12:00.000Z"
 description: "Introducing The Cloud Resume Challenge and my goals for the project."
 ---
