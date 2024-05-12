@@ -11,7 +11,7 @@ I would need to define an S3 bucket configured for static website hosting, with 
 ```hcl
 # Create S3 bucket
 resource "aws_s3_bucket" "cv" {
-  bucket = "cv.benjamesdodwell.com"
+  bucket = "bucket-name-here"
 }
 
 resource "aws_s3_bucket_website_configuration" "cv" {
@@ -34,17 +34,15 @@ resource "aws_s3_bucket_public_access_block" "public_access" {
 data "aws_iam_policy_document" "public_access" {
   statement {
     principals {
-      type        = "AWS"
+      type        = "*"
       identifiers = ["*"]
     }
 
     actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
+      "s3:GetObject"
     ]
 
     resources = [
-      aws_s3_bucket.cv.arn,
       "${aws_s3_bucket.cv.arn}/*",
     ]
   }
@@ -218,7 +216,7 @@ jobs:
     - name: Configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsTerraformRole
+        role-to-assume: arn:aws:iam::############:role/GitHubActionsTerraformRole
         aws-region: eu-west-2
 
     - name: Checkout
@@ -241,7 +239,7 @@ jobs:
 
 I made changes to the last few steps, as a result of a challenge that I encountered. Currently, there seems to be no native Terraform method of invalidating the CloudFront distribution cache. I would like to do this following each change to infrastructure, which will most frequently be updates to the CV itself, so that the latest version is served as soon as possible.
 
-AWS CLI can handle the task with the [cloudfront create-invalidation](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudfront/create-invalidation.html) command, and this can be run as a GitHub Actions step. The next issue is that this command requires the CloudFront distribution ID, and since I didn't want to hardcode this, I needed a way to extract the value from Terraform. This can be accomplished with [Terraform Output Values](https://developer.hashicorp.com/terraform/language/values/outputs) such as the following:
+AWS CLI can handle the task with the [cloudfront create-invalidation](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudfront/create-invalidation.html) command, and this can be run as a GitHub Actions step. The next issue is that this command requires the CloudFront distribution ID, and since I can't hard-code this, I needed a way to extract the value from Terraform. This can be accomplished with [Terraform Output Values](https://developer.hashicorp.com/terraform/language/values/outputs) such as the following:
 
 ```hcl
 output "cf_id" {
@@ -271,4 +269,4 @@ Then, using `terraform output` and GitHub Actions [steps context](https://docs.g
 
 This should now provide me with a complete backend and frontend infrastructure, defined as code, with automated build, testing, and deployment pipelines. 
 
-There will surely be some fixes and improvements that I make over time to this project but the final and most important part of this Cloud Resume Challenge is for me to start writing my CV in HTML, CSS, and JavaScript and get it published on the internet.
+There will surely be some fixes and improvements that I make over time to this project but the final and most important part of this Cloud Resume Challenge is for me to start writing my CV with HTML and CSS and get it published on the internet.
