@@ -1,6 +1,6 @@
 # Create S3 bucket
 resource "aws_s3_bucket" "blog" {
-  bucket = "blog.cv.benjamesdodwell.com"
+  bucket = var.BLOG_BUCKET
 }
 
 resource "aws_s3_bucket_website_configuration" "blog" {

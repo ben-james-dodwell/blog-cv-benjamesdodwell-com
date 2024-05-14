@@ -47,5 +47,6 @@ aws cli configure
 
 Run the Terraform module:
 ```sh
-terraform apply
+terraform init -backend-config="backend.tfvars"
+terraform apply -var-file="production.tfvars" -var-file="backend.tfvars"
 ```
