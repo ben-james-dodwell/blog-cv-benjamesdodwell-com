@@ -35,6 +35,7 @@ const Seo = ({ description, title, children }) => {
       <meta property="og:title" content={title} />
       <meta property="og:description" content={metaDescription} />
       <meta property="og:type" content="website" />
+      <script defer data-domain="blog.cv.benjamesdodwell.com" src="https://plausible.io/js/script.js"></script>
       {children}
     </>
   )
