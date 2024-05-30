@@ -50,11 +50,24 @@ resource "aws_kms_key" "blog" {
       {
         "Effect": "Allow",
         "Principal": {
-            "Service": "delivery.logs.amazonaws.com"
+          "Service": "delivery.logs.amazonaws.com"
         },
         "Action": "kms:GenerateDataKey*",
         "Resource": "*"
-      }     
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "cloudfront.amazonaws.com"
+        },
+        "Action": "kms:Decrypt*",
+        "Resource": "*",
+        "Condition": {
+          "StringEquals": {
+            "AWS:SourceArn": "arn:aws:cloudfront::231055119230:distribution/E45I8YM4CNL7V"
+          }
+        }
+      }
     ]
   }
 POLICY
