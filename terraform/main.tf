@@ -1,81 +1,160 @@
-# Create S3 bucket
-resource "aws_s3_bucket" "blog" {
-  bucket = var.BLOG_BUCKET
+# Create Key Management Service Customer Managed Key for encryption of blog resources
+resource "aws_kms_key" "blog" {
+  description             = "blog"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = <<POLICY
+  {
+    "Version": "2012-10-17",
+    "Id": "default",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::${var.aws_account}:root"
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::${var.aws_account}:user/terraform"
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::${var.aws_account}:role/GitHubActionsTerraformRole" 
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "logs.${var.region}.amazonaws.com" 
+        },
+        "Action": [
+            "kms:Encrypt*",
+            "kms:Decrypt*",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:Describe*"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "delivery.logs.amazonaws.com"
+        },
+        "Action": "kms:GenerateDataKey*",
+        "Resource": "*"
+      }     
+    ]
+  }
+POLICY
 }
 
-resource "aws_s3_bucket_website_configuration" "blog" {
+# Create S3 bucket
+resource "aws_s3_bucket" "blog" {
+  #checkov:skip=CKV_AWS_144:Cross-region replication not required for frontend bucket.
+  #checkov:skip=CKV_AWS_18:Access logging not required for frontend bucket.
+  #checkov:skip=CKV2_AWS_62:Event notifications not required for frontend bucket.
+  #checkov:skip=CKV2_AWS_61:Lifecycle configuration not required for frontend bucket.
+
+  bucket = var.BLOG_BUCKET
+
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_public_access_block" "blog_public_access_block" {
   bucket = aws_s3_bucket.blog.id
 
-  index_document {
-    suffix = "index.html"
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "blog_versioning" {
+  bucket = aws_s3_bucket.blog.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "public_access" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "blog_encryption" {
   bucket = aws_s3_bucket.blog.id
 
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.blog.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
 }
 
-data "aws_iam_policy_document" "public_access" {
+data "aws_iam_policy_document" "cloudfront_blog_access" {
   statement {
     principals {
-      type        = "AWS"
-      identifiers = ["*"]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
 
     actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
+      "s3:GetObject"
     ]
 
     resources = [
-      aws_s3_bucket.blog.arn,
-      "${aws_s3_bucket.blog.arn}/*",
+      "${aws_s3_bucket.blog.arn}/*"
     ]
+
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "AWS:SourceArn"
+      values   = ["${aws_cloudfront_distribution.blog.arn}"]
+    }
   }
 }
 
-resource "aws_s3_bucket_policy" "public_access" {
+resource "aws_s3_bucket_policy" "cloudfront_blog_access" {
   bucket = aws_s3_bucket.blog.id
-  policy = data.aws_iam_policy_document.public_access.json
+  policy = data.aws_iam_policy_document.cloudfront_blog_access.json
+}
 
-  depends_on = [aws_s3_bucket_public_access_block.public_access]
+data "aws_s3_bucket" "logging" {
+  bucket = var.LOGGING_BUCKET
 }
 
 # Create CloudFront distribution
 resource "aws_cloudfront_distribution" "blog" {
-  origin {
-    domain_name = aws_s3_bucket_website_configuration.blog.website_endpoint
-    origin_id   = aws_s3_bucket_website_configuration.blog.website_endpoint
+  #checkov:skip=CKV_AWS_310:Origin failover not required for frontend CloudFront distribution.
+  #checkov:skip=CKV_AWS_68:WAF not required for frontend CloudFront distribution.
+  #checkov:skip=CKV2_AWS_47:WAF (AMR for Log4j) not required for frontend CloudFront distribution.
+  default_root_object = "index.html"
+  enabled             = true
+  is_ipv6_enabled     = true
+  aliases             = ["blog.cv.benjamesdodwell.com"]
 
-    custom_origin_config {
-      http_port                = 80
-      https_port               = 443
-      origin_keepalive_timeout = 5
-      origin_protocol_policy   = "http-only"
-      origin_read_timeout      = 30
-      origin_ssl_protocols = [
-        "SSLv3",
-        "TLSv1",
-        "TLSv1.1",
-        "TLSv1.2",
-      ]
-    }
+  origin {
+    domain_name              = aws_s3_bucket.blog.bucket_regional_domain_name
+    origin_id                = aws_s3_bucket.blog.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.blog.id
   }
 
-  enabled         = true
-  is_ipv6_enabled = true
-
-  aliases = ["blog.cv.benjamesdodwell.com"]
-
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = aws_s3_bucket_website_configuration.blog.website_endpoint
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = aws_s3_bucket.blog.bucket_regional_domain_name
+    viewer_protocol_policy     = "redirect-to-https"
+    min_ttl                    = 0
+    compress                   = true
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.blog_security_headers.id
 
     forwarded_values {
       query_string = false
@@ -84,10 +163,6 @@ resource "aws_cloudfront_distribution" "blog" {
         forward = "none"
       }
     }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    compress               = true
   }
 
   restrictions {
@@ -100,6 +175,32 @@ resource "aws_cloudfront_distribution" "blog" {
     acm_certificate_arn      = aws_acm_certificate.blog.arn
     minimum_protocol_version = "TLSv1.2_2021"
     ssl_support_method       = "sni-only"
+  }
+
+  logging_config {
+    include_cookies = false
+    bucket          = data.aws_s3_bucket.logging.bucket_regional_domain_name
+    prefix          = "blog"
+  }
+}
+
+resource "aws_cloudfront_origin_access_control" "blog" {
+  name                              = "blog"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+resource "aws_cloudfront_response_headers_policy" "blog_security_headers" {
+  name = "blog-security-headers-policy"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      override                   = true
+      preload                    = true
+    }
   }
 }
 
@@ -114,6 +215,10 @@ resource "aws_acm_certificate" "blog" {
   provider          = aws.virginia
   domain_name       = "blog.cv.benjamesdodwell.com"
   validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 data "aws_route53_zone" "cv_benjamesdodwell_com" {
