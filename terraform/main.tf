@@ -131,6 +131,37 @@ data "aws_s3_bucket" "logging" {
   bucket = var.LOGGING_BUCKET
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "blog_retention" {
+  bucket = data.aws_s3_bucket.logging.id
+
+  rule {
+    id     = "blog_retention"
+    status = "Enabled"
+
+    filter {
+      prefix = "blog"
+    }
+
+    transition {
+      days = 30
+      storage_class = "GLACIER_IR"
+    }
+
+    expiration {
+      days = 60
+    }
+
+    noncurrent_version_transition {
+      noncurrent_days = 7
+      storage_class = "GLACIER_IR"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 14
+    }
+  }
+}
+
 # Create CloudFront distribution
 resource "aws_cloudfront_distribution" "blog" {
   #checkov:skip=CKV_AWS_310:Origin failover not required for frontend CloudFront distribution.
