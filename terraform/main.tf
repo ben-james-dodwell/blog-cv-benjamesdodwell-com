@@ -64,7 +64,7 @@ resource "aws_kms_key" "blog" {
         "Resource": "*",
         "Condition": {
           "StringEquals": {
-            "AWS:SourceArn": "arn:aws:cloudfront::231055119230:distribution/E45I8YM4CNL7V"
+            "AWS:SourceArn": "${aws_cloudfront_distribution.blog.arn}"
           }
         }
       }
